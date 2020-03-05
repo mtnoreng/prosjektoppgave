@@ -40,6 +40,10 @@ public class DataGenerator {
     private Double [] weatherPenaltyOperations;
     private int [] weatherPenaltySpeed;
     private String weatherFile;
+    private int[][] twIntervals;
+    private int[][] precedenceALNS;
+    private int[] simultaneousALNS;
+    private int[][] bigTasksALNS;
 
     public DataGenerator(int[] vessels, int days, int[] locationsStartNodes, String filePath, String fileNameRouting, String weatherFile){
         this.vesselsInput=vessels;
@@ -52,6 +56,11 @@ public class DataGenerator {
         this.weatherFile=weatherFile;
         this.weatherPenaltyOperations=new Double[days*12];
         this.weatherPenaltySpeed=new int[days*12];
+        twIntervals=new int[60][2];
+        for (int[] operation: twIntervals){
+            operation[0]=0;
+            operation[1]=days*12;
+        }
     }
 
     public void importWeather() throws FileNotFoundException {
@@ -85,8 +94,8 @@ public class DataGenerator {
             }
         }
         //for (int d=0;d<weatherValues.length;d++){
-            //System.out.println("Wave height: "+weatherValues[d]+" Operation penalty: "+weatherPenaltyOperations[d]+
-              //      " Speed penalty: "+weatherPenaltySpeed);
+        //System.out.println("Wave height: "+weatherValues[d]+" Operation penalty: "+weatherPenaltyOperations[d]+
+        //      " Speed penalty: "+weatherPenaltySpeed);
         //}
     }
 
@@ -119,7 +128,6 @@ public class DataGenerator {
         }
         s.close();
         this.distanceArray=new int[distanceMatrix.size()][distanceMatrix.size()];
-        System.out.println("Max sailing time not rounded: "+maxDistance/(10*1.85));
         maxSailingTime=(int) Math.ceil(maxDistance/(10*1.85));
         for (int n =0;n<distanceMatrix.size();n++){
             for (int i =0;i<distanceMatrix.size();i++){
@@ -129,61 +137,11 @@ public class DataGenerator {
         }
     }
 
-
-    public void createOperationTypes(){
-        //number,vessel1,vessel2,vesselBigTask, presedensOver, presedensAv, mHyppighet, sdHyppighet,
-        //varighet, penalty
-        int [] op1v1=new int[]{2,3,4,6};
-        OperationType op1= new OperationType(1,op1v1,null,null,2
-                ,0,17520,730,8,costPenalty*maxSailingTime*4,"Transport net before operation");
-        int [] op2v1=new int[]{2,3,4,6};
-        int [] op2v2=new int[]{2,3,4,6};
-        OperationType op2=new OperationType(2, op2v1,op2v2,null,
-                3, 1, 17520, 730, 4,costPenalty*maxSailingTime*4,"Install net");
-        int [] op3v1=new int[]{2,3,4,6};
-        OperationType op3= new OperationType(3, op3v1, null,
-                null, 0,2, 17520, 730, 8,costPenalty*maxSailingTime*4,"Transport net after operation");
-        int [] op4v1=new int[]{5};
-        int [] op4v2=new int[]{2,3,4,6};
-        OperationType op4=new OperationType(4, op4v1, op4v2, null,
-                0, 0, 1152, 192, 5,costPenalty*maxSailingTime*8,"Delousing");
-        int [] op5v1=new int[]{2,3,4};
-        int [] op5v2=new int[]{2,3,4};
-        int [] op5BT=new int[]{6};
-        OperationType op5= new OperationType(5, op5v1, op5v2, op5BT,
-                0,0, 8760, 360, 40,costPenalty*maxSailingTime,"Large inspection of the facility");
-        int [] op6v1=new int[]{2};
-        OperationType op6=new OperationType(6, op6v1, null, null,
-                0,0, 5110, 730, 5,costPenalty*maxSailingTime*4,"Wash the net");
-        int [] op7v1=new int[]{4,6};
-        OperationType op7=new OperationType(7, op7v1, null, null,
-                0,0, 8760, 360, 48,costPenalty*maxSailingTime,"tightening anchor lines");
-        int [] op8v1=new int[]{2,3,4,6};
-        int [] op8v2=new int[]{2,3,4,6};
-        OperationType op8=new OperationType(8, op8v1, op8v2, null,
-                0,9, 8760, 360, 3,costPenalty*maxSailingTime*4,"Small installation facility");
-        int [] op9v1=new int[]{2,3,4,6};
-        OperationType op9= new OperationType(9, op9v1, null, null,
-                8, 0, 8760, 360, 6,costPenalty*maxSailingTime*4,"Easy transport of equipment to facility");
-        int [] op10v1=new int[]{2,3,4,6};
-        OperationType op10=new OperationType(10, op10v1, null, null,
-                0,0, 720, 100, 2,costPenalty*maxSailingTime*4,"Remove dead fish");
-        int [] op11v1=new int[]{2,3,4,6};
-        OperationType op11=new OperationType(11, op11v1, null, null,
-                0,0, 720, 100, 4,costPenalty*maxSailingTime*8,"Support wellboat");
-        int [] op12v1=new int[]{1,2,3,4,6};
-        OperationType op12=new OperationType(12, op12v1, null, null,
-                0,0, 720, 100, 5,costPenalty*maxSailingTime*4,"Inspect net ROV");
-        int [] op13v1=new int[]{1,3};
-        OperationType op13=new OperationType(13, op13v1, null, null,
-                0,0, 8760, 360, 4,costPenalty*maxSailingTime*4,"Inspect net diver");
-        int [] op14v1=new int[]{2};
-        OperationType op14=new OperationType(14, op14v1, null, null,
-                0,0, 8760, 360, 4,costPenalty*maxSailingTime,"Wash bottom ring and floating collar");
-        int [] op15v1=new int[]{2,3,4,6};
-        OperationType op15=new OperationType(15, op15v1, null, null,
-                0,0, 168, 24, 3,costPenalty*maxSailingTime*4,"Support working boat");
-        this.operationTypes=new OperationType[]{op1,op2,op3,op4,op5,op6,op7,op8,op9,op10,op11,op12,op13,op14,op15};
+    public void runOperationGenerator(){
+        OperationGenerator og=new OperationGenerator();
+        //REMEMBER TO CHOOSE TEST OR NOT HERE
+        //this.operationTypes=og.createOperationTypes();
+        this.operationTypes=og.createOperationTypesTest();
     }
 
     public void readInstance() throws FileNotFoundException {
@@ -245,7 +203,7 @@ public class DataGenerator {
         return matchOp;
     }
 
-    public Vessel findVesselType(int number){
+    public Vessel findVesselObject(int number){
         Vessel matchV=vessels[0];
         for (Vessel v : vessels){
             if (v.getNum()==number){
@@ -268,6 +226,9 @@ public class DataGenerator {
     }
 
     public void generateOperations(){
+        List<int[]> precedenceALNSTemp= new ArrayList<>();
+        List<Integer> simultaneousALNSTemp= new ArrayList<>();
+        List<int[]> bigTasksALNSTemp= new ArrayList<>();
         List<Operation> operations=new ArrayList<Operation>();
         int opNumber=1;
         int[] tw= IntStream.rangeClosed(1, this.days*12).toArray();
@@ -286,14 +247,18 @@ public class DataGenerator {
                         }
                         int[] tw11= new int[this.days*12];
                         tw11[t-1]=t;
+                        twIntervals[opNumber-1][0]=t;
+                        twIntervals[opNumber-1][1]=t;
                         op = new Operation(opNumber, opType.getVessel1(), location, 0, null,
                                 opType.getPrecedenceOver(), tw11, opType.getDuration(),
                                 opType.getNumber(), opType.getPenalty(), opType.getName());
                     }
                     operations.add(op);
+                    simultaneousALNSTemp.add(0);
+                    bigTasksALNSTemp.add(null);
                     this.consolidatedTasks.put(op.getNumber()+nStartNodes, new ArrayList<Integer>(){{}});
                     this.bigTasks.add(op.getNumber()+nStartNodes);
-                    routing.add("Operation: "+String.valueOf(opNumber)+
+                    routing.add("Operation: "+String.valueOf(opNumber+nStartNodes)+
                             " Precedence: "+String.valueOf(op.getPrecedence())+" Location: "+ String.valueOf(op.getLocation())+
                             " optype: "+String.valueOf(op.getType())+" bigTaskSet: "+String.valueOf(op.getBigTaskSet())+
                             "Sim: "+String.valueOf(op.getSimultaneous())+" Vessels: "+Arrays.toString(op.getVessels())
@@ -305,10 +270,12 @@ public class DataGenerator {
                             opType.getPrecedenceOver(),tw, opType.getDuration(),
                             opType.getNumber(),opType.getPenalty(),opType.getName()+" Part 1");
                     operations.add(op1);
-                    routing.add("Operation: "+String.valueOf(opNumber)+
+                    simultaneousALNSTemp.add(opNumber+nStartNodes+1);
+                    bigTasksALNSTemp.add(null);
+                    routing.add("Operation: "+String.valueOf(opNumber+nStartNodes)+
                             " Precedence: "+String.valueOf(op1.getPrecedence())+" Location: "+ String.valueOf(op1.getLocation())+
                             " optype: "+String.valueOf(op1.getType())+" bigTaskSet: "+String.valueOf(op1.getBigTaskSet())+
-                            "Sim: "+String.valueOf(op1.getSimultaneous())+" Vessels: "+Arrays.toString(op1.getVessels())+" Duration: "+op1.getDuration()+" Task description: "+op1.getName());
+                            "Sim: "+String.valueOf(op1.getSimultaneous()+nStartNodes)+" Vessels: "+Arrays.toString(op1.getVessels())+" Duration: "+op1.getDuration()+" Task description: "+op1.getName());
                     this.consolidatedTasks.put(op1.getNumber()+nStartNodes, new ArrayList<Integer>(){{}});
                     this.bigTasks.add(op1.getNumber()+nStartNodes);
                     opNumber+=1;
@@ -316,10 +283,12 @@ public class DataGenerator {
                             opType.getPrecedenceOver(),tw, opType.getDuration(),
                             opType.getNumber(),opType.getPenalty(),opType.getName()+" Part 2");
                     operations.add(op2);
-                    routing.add("Operation: "+String.valueOf(opNumber)+
+                    simultaneousALNSTemp.add(opNumber+nStartNodes-1);
+                    bigTasksALNSTemp.add(null);
+                    routing.add("Operation: "+String.valueOf(opNumber+nStartNodes)+
                             " Precedence: "+String.valueOf(op2.getPrecedence())+" Location: "+ String.valueOf(op2.getLocation())+
                             " optype: "+String.valueOf(op2.getType())+" bigTaskSet: "+String.valueOf(op2.getBigTaskSet())+
-                            "Sim: "+String.valueOf(op2.getSimultaneous())+" Vessels: "+Arrays.toString(op2.getVessels())+" Duration: "+op2.getDuration()+" Task description: "+op2.getName());
+                            "Sim: "+String.valueOf(op2.getSimultaneous()+nStartNodes)+" Vessels: "+Arrays.toString(op2.getVessels())+" Duration: "+op2.getDuration()+" Task description: "+op2.getName());
                     this.consolidatedTasks.put(op2.getNumber()+nStartNodes, new ArrayList<Integer>(){{}});
                     this.bigTasks.add(op2.getNumber()+nStartNodes);
                     opNumber+=1;
@@ -329,26 +298,32 @@ public class DataGenerator {
                             opType.getPrecedenceOver(),tw, opType.getDuration(),
                             opType.getNumber(),opType.getPenalty(),opType.getName()+" Part 1 of big task operation");
                     operations.add(opSmall1);
-                    routing.add("Operation: "+String.valueOf(opNumber)+" Vessels: "+
+                    simultaneousALNSTemp.add(opNumber+nStartNodes+1);
+                    bigTasksALNSTemp.add(new int[]{opNumber+nStartNodes+2,opNumber+nStartNodes,opNumber+nStartNodes+1});
+                    routing.add("Operation: "+String.valueOf(opNumber+nStartNodes)+
                             " Precedence: "+String.valueOf(opSmall1.getPrecedence())+" Location: "+ String.valueOf(opSmall1.getLocation())+
                             " optype: "+String.valueOf(opSmall1.getType())+" bigTaskSet: "+String.valueOf(opSmall1.getBigTaskSet())+
-                            "Sim: "+String.valueOf(opSmall1.getSimultaneous())+" Vessels: "+Arrays.toString(opSmall1.getVessels())+" Duration: "+opSmall1.getDuration()+" Task description: "+opSmall1.getName());
+                            "Sim: "+String.valueOf(opSmall1.getSimultaneous()+nStartNodes)+" Vessels: "+Arrays.toString(opSmall1.getVessels())+" Duration: "+opSmall1.getDuration()+" Task description: "+opSmall1.getName());
                     opNumber+=1;
                     Operation opSmall2=new Operation(opNumber, opType.getVessel2(), location, opNumber-1, null,
                             opType.getPrecedenceOver(),tw, opType.getDuration(),
                             opType.getNumber(),opType.getPenalty(),opType.getName()+" Part 2 of big task operation");
                     operations.add(opSmall2);
-                    routing.add("Operation: "+String.valueOf(opNumber)+" Vessels: "+
+                    simultaneousALNSTemp.add(opNumber+nStartNodes-1);
+                    bigTasksALNSTemp.add(new int[]{opNumber+1+nStartNodes,opNumber+nStartNodes,opNumber-1+nStartNodes});
+                    routing.add("Operation: "+String.valueOf(opNumber+nStartNodes)+
                             " Precedence: "+String.valueOf(opSmall2.getPrecedence())+" Location: "+ String.valueOf(opSmall1.getLocation())+
                             " optype: "+String.valueOf(opSmall2.getType())+" bigTaskSet: "+ Arrays.toString(opSmall2.getBigTaskSet()) +
-                            " Sim: "+String.valueOf(opSmall2.getSimultaneous())+" Vessels: "+Arrays.toString(opSmall2.getVessels())+" Duration: "+opSmall2.getDuration()+" Task description: "+opSmall2.getName());
+                            " Sim: "+String.valueOf(opSmall2.getSimultaneous()+nStartNodes)+" Vessels: "+Arrays.toString(opSmall2.getVessels())+" Duration: "+opSmall2.getDuration()+" Task description: "+opSmall2.getName());
                     opNumber+=1;
                     int [] bigTasksArray= new int[]{opSmall1.getNumber(),opSmall2.getNumber()};
                     Operation opBig=new Operation(opNumber, opType.getVesselBigTask(), location, 0, bigTasksArray,
                             opType.getPrecedenceOver(),tw, opType.getDuration(),
                             opType.getNumber(),opType.getPenalty(),opType.getName()+" Big task operation");
                     operations.add(opBig);
-                    routing.add("Operation: "+String.valueOf(opNumber)+
+                    simultaneousALNSTemp.add(0);
+                    bigTasksALNSTemp.add(new int[]{opNumber+nStartNodes,opNumber-1+nStartNodes,opNumber-2+nStartNodes});
+                    routing.add("Operation: "+String.valueOf(opNumber+nStartNodes)+
                             " Precedence: "+String.valueOf(opBig.getPrecedence())+" Location: "+ String.valueOf(opBig.getLocation())+
                             " optype: "+String.valueOf(opBig.getType())+" bigTaskSet: "+ Arrays.toString(opBig.getBigTaskSet()) +
                             "Sim: "+String.valueOf(opBig.getSimultaneous())+" Vessels: "+Arrays.toString(opBig.getVessels())+" Duration: "+opBig.getDuration()+" Task description: "+opBig.getName());
@@ -359,11 +334,33 @@ public class DataGenerator {
             }
         }
         Operation[] operations2=new Operation[operations.size()];
+        precedenceALNS=new int[precedenceALNSTemp.size()][2];
+        simultaneousALNS=new int[simultaneousALNSTemp.size()];
+        bigTasksALNS=new int[bigTasksALNSTemp.size()][3];
+        for (int p=0;p<precedenceALNSTemp.size();p++){
+            precedenceALNS[p]=new int[]{precedenceALNSTemp.get(p)[0],precedenceALNSTemp.get(p)[1]};
+        }
+        for (int s=0;s<simultaneousALNSTemp.size();s++){
+            simultaneousALNS[s]=simultaneousALNSTemp.get(s);
+        }
+        for (int b=0;b<bigTasksALNSTemp.size();b++){
+            if(bigTasksALNSTemp.get(b)!=null) {
+                bigTasksALNS[b] = new int[]{bigTasksALNSTemp.get(b)[0], bigTasksALNSTemp.get(b)[1], bigTasksALNSTemp.get(b)[2]};
+            }
+            else{
+                bigTasksALNS[b] =null;
+            }
+        }
         int addIndex=0;
         for (Operation op : operations){
             operations2[addIndex]=op;
             addIndex+=1;
         }
+        routing.add(" ");
+        for (Vessel v:vessels){
+            routing.add("Vessel "+ v.getNum()+" is vessel type "+v.getVesselType());
+        }
+        routing.add(" ");
         try(FileWriter fw = new FileWriter(fileNameRouting, true);
             BufferedWriter bw = new BufferedWriter(fw);
             PrintWriter out = new PrintWriter(bw))
@@ -381,24 +378,20 @@ public class DataGenerator {
         int nOperations=this.operations.length;
         int nVessels=this.vessels.length;
         int[][] precedence=new int[nOperations+2*nVessels][nOperations+2*nVessels];
+        precedenceALNS=new int[nOperations][2];
         for (Operation op1 : this.operations){
             for (Operation op2 : this.operations){
-                if(op1.getPrecedence()==op2.getType() && op1.getLocation()==op2.getLocation()){
-                    int num1=nStartNodes + (int) (op1.getNumber()) - 1;
-                    int num2=nStartNodes + (int)(op2.getNumber()) - 1;
+                if (op1.getPrecedence()==op2.getType() && op1.getLocation()==op2.getLocation()){
+                    int num1 = nStartNodes + (int) (op1.getNumber()) - 1;
+                    int num2 = nStartNodes + (int) (op2.getNumber()) - 1;
                     precedence[num1][num2]=1;
-                    System.out.println("Precedence: "+ String.valueOf(num1-nVessels+1)+" over "+
-                            String.valueOf(num2-nVessels+1));
+                    precedenceALNS[op1.getNumber()-1][0]=num2+1;
+                    precedenceALNS[op2.getNumber()-1][1]=num1+1;
+                    System.out.println("Operation "+num1+" has precedence over operation "+num2);
                 }
             }
         }
         this.precedence=precedence;
-        /*
-        System.out.println("PRECEDENCE");
-        this.printGrid(this.precedence[0].length,this.precedence);
-
-         */
-
     }
 
     public void createSimultaneous(){
@@ -411,17 +404,11 @@ public class DataGenerator {
                     int num1=nStartNodes + (int) (op1.getNumber()) - 1;
                     int num2=nStartNodes + (int)(op2.getNumber()) - 1;
                     sim[num1][num2]=1;
-                    System.out.println("Sim: "+ String.valueOf(num1-nVessels+1)+" and "+
-                            String.valueOf(num2-nVessels+1));
+                    System.out.println("Operation "+num1+" is simultaneous with operation "+num2);
                 }
             }
         }
         this.simultaneous=sim;
-        /*
-        System.out.println("SIMULTANEOUS");
-        this.printGrid(this.simultaneous[0].length,this.simultaneous);
-
-         */
     }
 
     public void createBigTasks(){
@@ -442,8 +429,6 @@ public class DataGenerator {
             addIndex+=1;
         }
         this.penalty=penList;
-        System.out.println("PENALTY");
-        System.out.println(Arrays.toString(this.penalty));
     }
 
     public void createVesselData(){
@@ -456,7 +441,7 @@ public class DataGenerator {
             this.earliestStartingTimeForVessel[vessel.getNum()-1]=vessel.getEarliestStartingTime();
             this.endPenaltyforVessel[vessel.getNum()-1]=vessel.getEndPenalty();
             for(Operation op:this.operations){
-                if(ExtendedModel.containsElement(vessel.getVesselType(),op.getVessels())){
+                if(containsElement(vessel.getVesselType(),op.getVessels())){
                     opForVessel[vessel.getNum()-1][op.getNumber()-1]=op.getNumber()+nStartNodes;
                 }
             }
@@ -466,16 +451,16 @@ public class DataGenerator {
         for (Vessel vessel : this.vessels){
             for (Operation op : this.operations){
                 for(int t=0;t<weatherPenaltySpeed.length;t++) {
-                    if (ExtendedModel.containsElement(op.getNumber() + nStartNodes, this.operationsForVessel[vessel.getNum() - 1])) {
+                    if (containsElement(op.getNumber() + nStartNodes, this.operationsForVessel[vessel.getNum() - 1])) {
                         if (op.getSimultaneous() == 0) {
                             timeOpVessel[vessel.getNum() - 1][op.getNumber() - 1][t] = (int) Math.round(vessel.getTimePenalty() * op.getDuration()*weatherPenaltyOperations[t]);
                             //System.out.println("vessel "+vessel.getNum()+ " op "+op.getNumber()+" time "+t+" penaltyV: "+vessel.getTimePenalty()+" penaltyW "+weatherPenaltyOperations[t] +
-                              //      " Duration "+op.getDuration());
+                            //      " Duration "+op.getDuration());
                         } else {
                             int[] v1 = findOperationType(op.getNumber()).getVessel1();
                             int[] v2 = findOperationType(op.getNumber()).getVessel1();
-                            double maxV1 = findVesselType(v1[v1.length - 1]).getTimePenalty();
-                            double maxV2 = findVesselType(v2[v2.length - 1]).getTimePenalty();
+                            double maxV1 = findVesselObject(v1[v1.length - 1]).getTimePenalty();
+                            double maxV2 = findVesselObject(v2[v2.length - 1]).getTimePenalty();
                             double penalty = Math.max(maxV1, maxV2);
                             timeOpVessel[vessel.getNum() - 1][op.getNumber() - 1][t] = (int) Math.round(penalty * op.getDuration()*weatherPenaltyOperations[t]);
                         }
@@ -484,13 +469,7 @@ public class DataGenerator {
             }
         }
         this.timeVesselUseOnOperation=timeOpVessel;
-        System.out.println("TIME VESSEL USE ON OPERATIONS");
-        System.out.println(" SailingCostForVessel: "+Arrays.toString(this.sailingCostForVessel));
-        System.out.println(" earliestStartingTimes: "+Arrays.toString(this.earliestStartingTimeForVessel));
-        System.out.println(" endPenalty: "+Arrays.toString(this.endPenaltyforVessel));
-        System.out.println("Operations for vessels");
-        printGrid2(this.operationsForVessel[0].length,operationsForVessel.length,this.operationsForVessel);
-        System.out.println(Arrays.toString(timeVesselUseOnOperation[2][5]));
+
     }
 
     public void createTimeWindows(){
@@ -503,8 +482,6 @@ public class DataGenerator {
             }
         }
         this.timeWindowsForOperations=timeWindows;
-        System.out.println("TIMEWINDOWS");
-        this.printGrid2(timeWindows[0].length,timeWindows.length,timeWindows);
     }
 
     public void createEdges(){
@@ -513,19 +490,19 @@ public class DataGenerator {
             int nOperations = this.operations.length;
             for (int n = 0; n < nOperations + nStartNodes + nEndNodes; n++) {
                 for (int i = 0; i < nOperations + nStartNodes + nEndNodes; i++) {
-                    if(!ExtendedModel.containsElement(n+1,startNodes)&&!ExtendedModel.containsElement(n+1,endNodes)&&!ExtendedModel.containsElement(i+1,startNodes)
-                            &&!ExtendedModel.containsElement(i+1,endNodes)) {
-                        if (ExtendedModel.containsElement(n+1,operationsForVessel[v]) && ExtendedModel.containsElement(i+1,operationsForVessel[v]) && n != i) {
+                    if(!containsElement(n+1,startNodes)&&!containsElement(n+1,endNodes)&&!containsElement(i+1,startNodes)
+                            &&!containsElement(i+1,endNodes)) {
+                        if (containsElement(n+1,operationsForVessel[v]) && containsElement(i+1,operationsForVessel[v]) && n != i) {
                             edges[v][n][i] = 1;
                         }
                     }
                     else if(n==v){
-                        if (ExtendedModel.containsElement(i+1,operationsForVessel[v]) || i == (nStartNodes+nEndNodes+nOperations-1-v)) {
+                        if (containsElement(i+1,operationsForVessel[v]) || i == (nStartNodes+nEndNodes+nOperations-1-v)) {
                             edges[v][n][i] = 1;
                         }
                     }
                     else if(i==(nStartNodes+nEndNodes+nOperations-1-v)) {
-                        if(ExtendedModel.containsElement(n+1,operationsForVessel[v])){
+                        if(containsElement(n+1,operationsForVessel[v])){
                             edges[v][n][i] = 1;
 
                         }
@@ -543,42 +520,34 @@ public class DataGenerator {
     }
 
     public void createSailingTimes(){
-        int[][][][] sailingTimes = new int[nStartNodes][operations.length+nStartNodes+nEndNodes][operations.length+nStartNodes+nEndNodes][weatherPenaltySpeed.length];
+        int[][][][] sailingTimes = new int[nStartNodes][weatherPenaltySpeed.length][operations.length+nStartNodes+nEndNodes][operations.length+nStartNodes+nEndNodes];
         for(Vessel v:this.vessels) {
-            for (Operation o1 : this.operations) {
-                for (Operation o2 : this.operations) {
-                    for(int t=0;t<weatherPenaltySpeed.length;t++) {
-                        sailingTimes[v.getNum() - 1][o1.getNumber() + nStartNodes - 1][o2.getNumber() + nStartNodes - 1][t] =
-                                (int) Math.ceil(distanceArray[o1.getLocation() - 1][o2.getLocation() - 1] / (v.getSpeed()-weatherPenaltySpeed[t]));
+            for (int t = 0; t < weatherPenaltySpeed.length; t++) {
+                for (Operation o1 : this.operations) {
+                    for (Operation o2 : this.operations) {
+                        sailingTimes[v.getNum() - 1][t][o1.getNumber() + nStartNodes - 1][o2.getNumber() + nStartNodes - 1] =
+                                (int) Math.ceil(distanceArray[o1.getLocation() - 1][o2.getLocation() - 1] / (v.getSpeed() - weatherPenaltySpeed[t]));
                     }
                 }
-            }
-            for (int n = 0; n < nStartNodes; n++) {
-                for (Operation o : this.operations) {
-                    for(int t=0;t<weatherPenaltySpeed.length;t++) {
-                        sailingTimes[v.getNum() - 1][n][o.getNumber() + nStartNodes - 1][t]
-                                = (int) Math.ceil(distanceArray[locationsStartNodes[n] - 1][o.getLocation() - 1] / (v.getSpeed()-weatherPenaltySpeed[t]));
+                for (int n = 0; n < nStartNodes; n++) {
+                    for (Operation o : this.operations) {
+
+                        sailingTimes[v.getNum() - 1][t][n][o.getNumber() + nStartNodes - 1]
+                                = (int) Math.ceil(distanceArray[locationsStartNodes[n] - 1][o.getLocation() - 1] / (v.getSpeed() - weatherPenaltySpeed[t]));
                     }
                 }
             }
         }
         this.sailingTimes=sailingTimes;
         int index=0;
-        /*
-        for(int[][] vessel:sailingTimes){
-            System.out.println("Vessel"+String.valueOf(index));
-            this.printGrid(this.operations.length+nStartNodes+nEndNodes,vessel);
-            index+=1;
-        }
-         */
     }
 
     public void generateData() throws FileNotFoundException {
         this.importWeather();
         this.createDistance();
+        this.runOperationGenerator();
         this.createVesselTypes();
         this.createVesselObjects();
-        this.createOperationTypes();
         this.readInstance();
         this.generateOperations();
         this.createSimultaneous();
@@ -601,42 +570,39 @@ public class DataGenerator {
             addIndex+=1;
         }
         this.createEdges();
+    }
+
+    public void printAllData(){
+        PrintData.printPrecedence(this.precedence);
+        PrintData.printSimultaneous(this.simultaneous);
+        PrintData.printOperationpenalty(this.penalty);
+        //PrintData.timeVesselUseOnOperations(this.timeVesselUseOnOperation, this.nStartNodes);
+        PrintData.printSailingCostForVessel(this.sailingCostForVessel);
+        PrintData.printEarliestStartingTimes(this.earliestStartingTimeForVessel);
+        PrintData.printEndPenaltyForVessel(this.endPenaltyforVessel);
+        PrintData.printOperationsForVessel (this.operationsForVessel);
+        //PrintData.printSailingTimes(this.sailingTimes, 1, this.operations.length, nStartNodes);
+        PrintData.printTimeWindows(this.timeWindowsForOperations);
+        PrintData.printTimeWindowsIntervals(this.twIntervals);
+        PrintData.printPrecedenceALNS(this.precedenceALNS);
+        PrintData.printSimALNS(this.simultaneousALNS);
+        PrintData.printBigTasksALNS(this.bigTasksALNS,operations.length);
+    }
+
+    public static void main(String[] args) throws FileNotFoundException {
+        int[] loc = new int[]{1,2,9,10,11,12,13,14,15};
+        int[] vessels=new int[]{2,3,5};
+        int[] locStart = new int[]{1,2,3};
+        DataGenerator dg=new DataGenerator(vessels,5,locStart,
+                "test_instances/test_instance_25_locations.txt",
+                "routing","weather_files/weather_september.txt");
+        dg.generateData();
+        dg.printAllData();
 
     }
 
-        public static void main(String[] args) throws FileNotFoundException {
-            int[] loc = new int[]{1,2,9,10,11,12,13,14,15};
-            int[] vessels=new int[]{2,3,5};
-            int[] locStart = new int[]{1,2,3};
-            DataGenerator dg=new DataGenerator(vessels,5,locStart,
-                    "C:/Users/ingeboml/IdeaProjects/project_report/20-6_i_m.txt",
-                    "routing","C:/Users/ingeboml/IdeaProjects/project_report/weather_september.txt");
-            dg.generateData();
-
-        }
-
-    public static void printGrid(int dim,int[][] matrix)
-    {
-        for(int i = 0; i < dim; i++)
-        {
-            for(int j = 0; j < dim; j++)
-            {
-                System.out.printf("%5d ", matrix[i][j]);
-            }
-            System.out.println();
-        }
-    }
-
-    public static void printGrid2(int dim1,int dim2, int[][] matrix)
-    {
-        for(int i = 0; i < dim2; i++)
-        {
-            for(int j = 0; j < dim1; j++)
-            {
-                System.out.printf("%5d ", matrix[i][j]);
-            }
-            System.out.println();
-        }
+    public int[][] getTwIntervals() {
+        return twIntervals;
     }
 
     public int[][][][] getSailingTimes() {
@@ -707,6 +673,18 @@ public class DataGenerator {
         return startNodes;
     }
 
+    public int[][] getPrecedenceALNS() {
+        return precedenceALNS;
+    }
+
+    public int[] getSimultaneousALNS() {
+        return simultaneousALNS;
+    }
+
+    public int[][] getBigTasksALNS() {
+        return bigTasksALNS;
+    }
+
     public static String removeSpace(String str)
     {
         // Count leading zeros
@@ -723,6 +701,18 @@ public class DataGenerator {
         sb.replace(0, i, "");
 
         return sb.toString();  // return in String
+    }
+
+    //Static functions also valuable for other classes
+
+    public static Boolean containsElement(int element, int[] list)   {
+        Boolean bol = false;
+        for (Integer e: list)     {
+            if(element==e){
+                return true;
+            }
+        }
+        return bol;
     }
 }
 

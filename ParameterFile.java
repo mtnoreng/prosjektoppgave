@@ -7,10 +7,10 @@ public class ParameterFile {
 
     //Insert the filepath of the weatherfile, if you want no weather impact, use the file path for the
     //normal weather file
-    public static String weatherFile= "C:/Users/ingeboml/IdeaProjects/project_report/weather_files/weather_normal.txt";
+    public static String weatherFile= "weather_files/weather_normal.txt";
 
     //Insert the filepath of the testInstance. If you want to create a new test instance, use the OperationGenerator class
-    public static String testInstance ="C:/Users/ingeboml/IdeaProjects/project_report/test_instances/25-6_f_h.txt";
+    public static String testInstance ="test_instances/25-6_f_h.txt";
 
     // Insert the name of your result-routing-file. In this file the different variables are printed for the results
     // for each test instance you run on one of the models
@@ -21,5 +21,5 @@ public class ParameterFile {
     public static int days=5;
 
     //Insert the filepath of the positions.csv file which has all instances between all locations used
-    public static String filePathPositionFile= "C:/Users/ingeboml/IdeaProjects/project_report/Positions.csv";
+    public static String filePathPositionFile= "Positions.csv";
 }
