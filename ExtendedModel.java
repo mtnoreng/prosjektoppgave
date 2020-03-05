@@ -556,6 +556,7 @@ public class ExtendedModel {
         }
     }
 
+    /*
     public static void main(String[] args) throws FileNotFoundException {
         int[] vessels=new int[]{1,2,4,5,5,6};
         int[] locStart = new int[]{1,2,3,4,5,6};
@@ -597,5 +598,7 @@ public class ExtendedModel {
         m.writeToFile(routing, nameResultFile);
 
     }
+
+     */
 }
 
