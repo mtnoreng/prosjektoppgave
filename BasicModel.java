@@ -68,7 +68,7 @@ public class BasicModel {
         List<String> routing=new ArrayList<>();
         List<Integer> vesselsNotUsed=new ArrayList<>();
         List<Integer> operationsNotPerformed=new ArrayList<>();
-        String[][] vesselPath = new String[nVessels][nTimePeriods];
+        String[][] vesselPath = new String[nVessels][nTimePeriods*2];
 
         try {
             // Model
@@ -79,15 +79,23 @@ public class BasicModel {
 
 
             // Sailing decision variable, x[vijt]=1 if vessel v sails from i to j in time period t
-            GRBVar[][][][] x = new GRBVar[nVessels][nTimePeriods][nOperations][nOperations];
+            GRBVar[][][][] x = new GRBVar[nVessels][2*nTimePeriods][nOperations][nOperations];
             for (int v = 0; v < nVessels; ++v) {
                 for (int t = EarliestStartingTimeForVessel[v]; t < nTimePeriods; ++t) {
-                    for (int i = 0; i < nOperations; ++i) {
+                    for (int i = 0; i < nOperations-nVessels; ++i) {
                         for (int j = 0; j < nOperations; ++j) {
-                            if (Edges[v][i][j] == 1) {
+                            if(Edges[v][i][j] == 1) {
                                 x[v][t][i][j] = model.addVar(0, 1, -SailingCostForVessel[v] * SailingTimes[v][t][i][j],
                                         GRB.BINARY, "x" + v + "." + t + "." + i + "." + j);
+                                if (j == nOperations - v - 1 && i > nVessels && t == nTimePeriods - 1) {
+                                    for (int k = t + 1; k < t + TimeVesselUseOnOperation[v][i - nVessels][t] + 1; k++) {
+                                        x[v][k][i][j] = model.addVar(0, 1, -SailingCostForVessel[v] * SailingTimes[v][t][i][j],
+                                                GRB.BINARY, "x" + v + "." + k + "." + i + "." + j);
+                                        //System.out.println("lagt til" + "x" + v + "." + k + "." + i + "." + j);
+                                    }
+                                }
                             }
+                            //System.out.println("x" + v + "." + t + "." + i + "." + j);
                         }
                     }
                 }
@@ -169,6 +177,7 @@ public class BasicModel {
                 }
             }
 
+            /*
             // Following operation constraint
             for (int v = 0; v < nVessels; ++v) {
                 for (int i = nVessels; i < nOperations; ++i) {
@@ -185,7 +194,7 @@ public class BasicModel {
                                 //System.out.println("add y with v= " + (v+1) + " operation= " + (i+1) + "
                                 // timeperiod= " + (t-TimeVesselUseOnOperation[v][i - nVessels]+1));
                             }
-                            for (int j = nVessels; j < nOperations; ++j) {
+                            for (int j = nVessels; j < nOperations-nVessels; ++j) {
                                 if (Edges[v][i][j] == 1) {
                                     next_sail.addTerm(1, x[v][t][i][j]);
                                     //System.out.println("add x with v= " + (v+1) + " sail from operation= " + (i+1) + " sail to operation=  "
@@ -199,13 +208,14 @@ public class BasicModel {
                 }
             }
 
-            // Last operation to dummy node constraint
-            int count3 = 1;
+*/
+
+    // Last operation to dummy node constraint
             for (int v = 0; v < nVessels; ++v) {
                 for (int i = nVessels; i < nOperations; ++i) {
                     if (containsElement(i + 1, OperationsForVessel[v])) {
                         ArrayList<Integer> control = new ArrayList<Integer>();
-                        for (int t = EarliestStartingTimeForVessel[v]; t < nTimePeriods + TimeVesselUseOnOperation[v][i][t]; ++t) {
+                        for (int t = EarliestStartingTimeForVessel[v]; t < nTimePeriods; ++t) {
                             GRBLinExpr operation = new GRBLinExpr();
                             GRBLinExpr next_sail = new GRBLinExpr();
                             if (containsElement((t-TimeVesselUseOnOperation[v][i - nVessels][t]+1),
@@ -213,20 +223,30 @@ public class BasicModel {
                                     && !control.contains(t-TimeVesselUseOnOperation[v][i - nVessels][t])) {
                                 operation.addTerm(1, y[v][i][t-TimeVesselUseOnOperation[v][i - nVessels][t]]);
                                 control.add(t-TimeVesselUseOnOperation[v][i - nVessels][t]);
-                                //System.out.println("add y with v= " + (v+1) + " operation= " + (i+1) + "
-                                // timeperiod= " + (t-TimeVesselUseOnOperation[v][i - nVessels]+1));
+                                System.out.println("add y with v= " + (v+1) + " operation= " + (i+1) + " timeperiod= " +
+                                        (t-TimeVesselUseOnOperation[v][i - nVessels][t]+1));
                             }
-                            if(Edges[v][i][nOperations - (count3)] == 1) {
-                                next_sail.addTerm(1, x[v][t][i][nOperations - (count3)]);
-                                    //System.out.println("add x with v= " + (v+1) + " sail from operation= " + (i+1) + " sail to operation=  "
-                                    //        +(j+1) + " timeperiod= " + (t + TimeVesselUseOnOperation[v][i-nVessels]+1));
+                            for (int j = nVessels; j < nOperations; ++j) {
+                                if (Edges[v][i][j] == 1) {
+                                    next_sail.addTerm(1, x[v][t][i][j]);
+                                    if(i > nVessels && t == nTimePeriods - 1 && j == nOperations-v-1){
+                                        for (int k = t + 1; k < t + TimeVesselUseOnOperation[v][i - nVessels][t] + 1; k++) {
+                                            next_sail.addTerm(1, x[v][k][i][j]);
+                                            System.out.println("add x with v= " + (v+1) + " sail from operation= " + (i+1) + " sail to operation=  "
+                                                    +(j+1) + " timeperiod= " + (k+1));
+                                        }
+                                    }
+                                    System.out.println("add x with v= " + (v+1) + " sail from operation= " + (i+1) + " sail to operation=  "
+                                            +(j+1) + " timeperiod= " + (t+1));
                                 }
+                            }
                             model.addConstr(operation, GRB.EQUAL, next_sail, "followingoperation" + v + i + t);
                         }
                     }
                 }
-                count3 += 1;
             }
+
+
 
 
             // Following sail constraint
@@ -293,25 +313,31 @@ public class BasicModel {
                 count += 1;
             }
 
+
             //constraint that ensures that each planning horizon ends at the dummy end nodes
             int count2=1;
             for (int v=0;v<nVessels;++v) {
                 GRBLinExpr end = new GRBLinExpr();
                 for (int i = 0; i < nOperations; ++i) {
                     for(int t=EarliestStartingTimeForVessel[v];t<nTimePeriods;++t) {
-                        if ((containsElement(i + 1, OperationsForVessel[v])||containsElement(i+1,startNodes)) & Edges[v][i][nOperations - (count2)] == 1) {
+                        if ((containsElement(i+1,startNodes)|| containsElement(i+1, OperationsForVessel[v])) & Edges[v][i][nOperations - (count2)] == 1) {
                             end.addTerm(1, x[v][t][i][nOperations - (count2)]);
                             //System.out.println("add x for vessel "+(v+1)+", in timeperiod "+(t+1)
                             //        +", from operation "+(i+1)+" to operation"+(nOperations - (count2)+1));
                             //System.out.println("add tv for vessel "+(v+1)+", with value "+(t)
                             //        +", from operation "+(i+1)+" to operation"+(nOperations - (count2)+1));
+                            if( i > nVessels && t == nTimePeriods - 1){
+                                for (int k = t + 1; k < t + TimeVesselUseOnOperation[v][i - nVessels][t] + 1; k++) {
+                                    end.addTerm(1, x[v][k][i][nOperations - count2]);
+                                }
+                            }
                         }
                     }
                 }
                 model.addConstr(end, GRB.EQUAL, 1, "end" + v);
-
                 count2+=1;
             }
+
 
 
             // Precedence constraint
@@ -501,6 +527,16 @@ public class BasicModel {
                                             "task " + (i + 1) + " and task" + (j + 1) + " in time" +
                                             " period " + (t + 1));
                                     vesselPath[v][t] = "x (" + (i+1) +"-"+ (j+1) +")";
+                                }
+                                if (j == nOperations - v - 1 && t == nTimePeriods-1 && i > nVessels){
+                                    for (int k = t + 1; k < t + TimeVesselUseOnOperation[v][i - nVessels][t] + 1; k++) {
+                                        if (x[v][k][i][j].get(GRB.DoubleAttr.X) == 1) {
+                                            routing.add("Vessel " + (v + 1) + " is sailing between " +
+                                                    "task " + (i + 1) + " and task" + (j + 1) + " in time" +
+                                                    " period " + (k + 1));
+                                            vesselPath[v][k] = "x (" + (i + 1) + "-" + (j + 1) + ")";
+                                        }
+                                    }
                                 }
                             }
                         }

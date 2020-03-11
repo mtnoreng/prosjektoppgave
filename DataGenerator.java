@@ -60,7 +60,7 @@ public class DataGenerator {
 
     public void importWeather() throws FileNotFoundException {
         Scanner s = new Scanner(new File(this.weatherFile));
-        double[] weatherValues = new double[60];
+        double[] weatherValues = new double[24];
         int count=0;
         while (s.hasNextLine()){
             List<String> weather = new ArrayList<String>();
